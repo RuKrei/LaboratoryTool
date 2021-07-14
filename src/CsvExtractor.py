@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Author: Rudi Kreidenhuber, <Rudi.Kreidenhuber@gmail.com>, 
-# License: BSD (3-clause)
+# License: MIT
 
 import pandas as pd
 import os
