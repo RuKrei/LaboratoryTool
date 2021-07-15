@@ -10,15 +10,22 @@ cwd = os.getcwd()
 # configuration
 INPUT_FOLDER = os.path.join(cwd, "..", "input")
 OUTPUT_FOLDER = os.path.join(cwd, "..", "output")
-VALUES_OF_INTEREST = [  "PTT",
-                        "CRP",
-                        "Thrombozyten",
-                        "GOT (AST)",
-                        "Harnsäure",
-                        "HbA1c (IFCC)",
-                        "HbA-1c",
-                        "Ketonkörper",
-                        "eGFR CKD-EPI"]
+VALUES_OF_INTEREST = [  "CRP",
+                        "Glucose",
+                        "HbA1c (IFCC)"
+                        "Creatinin",
+                        "Cholesterin",
+                        "HDL-Cholesterin",
+                        "LDL-Cholesterin",
+                        "Leukocyten",
+                        "Neutrophile",
+                        "Lymphocyten",
+                        "Erythrocyten",
+                        "HKT",
+                        "Thrombocyten",
+                        "Fibrinogen",
+                        "PTZ-INR",
+                        "Gesamteiweiß"]
 
 
 print(f"\n\nFound the following input files:\n{os.listdir(INPUT_FOLDER)}")
@@ -35,7 +42,9 @@ class CsvTransformer:
         return os.path.splitext(base)[0]
     
     def read_csv(self, file):
-        return pd.read_csv(file, delimiter=";", error_bad_lines = False, encoding="latin-1")
+        #str_col = "NUMWERT"
+        return pd.read_csv(file, delimiter=";", error_bad_lines = False, 
+                            encoding="latin-1", dtype={"NUMWERT": "string"})
     
     def drop_unwanted_cols(self, df):
         garbage = ["GRUPPE", "STATUS", "UHRZEIT", "TEXTWERT", "EINHEIT", "NORMALWERTE"]
@@ -44,7 +53,7 @@ class CsvTransformer:
     
     def transform_csv_dates(self, df):
         date = df["DATUM"]
-        date = pd.to_datetime(date)
+        date = pd.to_datetime(date, dayfirst=True)
         df["DATUM"] = date
         return df
     
@@ -56,13 +65,14 @@ class CsvTransformer:
         return df
     
     def drop_all_but_oldest(self, df):
-        df = df.sort_values(["PARAMETER", "DATUM"])
-        df = df.drop_duplicates(subset="PARAMETER", keep="first")
+        df = df.sort_values(by=["PARAMETER", "DATUM"], na_position="first", ascending=False)
+        df = df.drop_duplicates(subset="PARAMETER", keep="last")
         return df
 
+    # not implemented
     def drop_all_but_newest(self, df):
-        df = df.sort_values(["PARAMETER", "DATUM"])
-        df = df.drop_duplicates(subset="PARAMETER", keep="last")
+        df = df.sort_values(["PARAMETER", "DATUM"]na_position="last", ascending=True)
+        df = df.drop_duplicates(subset="PARAMETER", keep="first")
         return df
 
 
@@ -78,7 +88,6 @@ if __name__ == "__main__":
         df = ct.transform_csv_dates(df)
         df = ct.drop_non_targets(df, VALUES_OF_INTEREST)
         df = ct.drop_all_but_oldest(df)
-        print(df)
         df = df.T
         outname = f.split(".")[0] + "_oldest.tsv"
         outname = os.path.join(OUTPUT_FOLDER, outname)
